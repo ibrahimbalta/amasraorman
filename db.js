@@ -254,6 +254,118 @@ function getDB() {
     }
 }
 
+// ---- IMAGE KEY HELPERS ----
+// Maps db image fields to KV keys so each image is stored/fetched individually
+function collectImageEntries(data) {
+    const entries = [];
+    // Hero background
+    if (data.hero && data.hero.bg_image && data.hero.bg_image.startsWith('data:image/')) {
+        entries.push({ kvKey: 'img_hero_bg', value: data.hero.bg_image, path: 'hero.bg_image' });
+    }
+    // About image
+    if (data.about && data.about.image && data.about.image.startsWith('data:image/')) {
+        entries.push({ kvKey: 'img_about', value: data.about.image, path: 'about.image' });
+    }
+    // Services images
+    if (data.services && Array.isArray(data.services)) {
+        data.services.forEach((s, i) => {
+            if (s && s.image && s.image.startsWith('data:image/')) {
+                entries.push({ kvKey: `img_service_${i}`, value: s.image, path: `services.${i}.image` });
+            }
+        });
+    }
+    // Gallery images
+    if (data.gallery && Array.isArray(data.gallery)) {
+        data.gallery.forEach((g, i) => {
+            if (g && g.image && g.image.startsWith('data:image/')) {
+                entries.push({ kvKey: `img_gallery_${g.id || i}`, value: g.image, path: `gallery.${i}.image` });
+            }
+        });
+    }
+    return entries;
+}
+
+// Strip base64 images from data clone and replace with KV key references like "kv:img_hero_bg"
+function stripImagesForCloud(data) {
+    const clone = JSON.parse(JSON.stringify(data));
+    if (clone.hero && clone.hero.bg_image && clone.hero.bg_image.startsWith('data:image/')) {
+        clone.hero.bg_image = 'kv:img_hero_bg';
+    }
+    if (clone.about && clone.about.image && clone.about.image.startsWith('data:image/')) {
+        clone.about.image = 'kv:img_about';
+    }
+    if (clone.services && Array.isArray(clone.services)) {
+        clone.services.forEach((s, i) => {
+            if (s && s.image && s.image.startsWith('data:image/')) {
+                s.image = `kv:img_service_${i}`;
+            }
+        });
+    }
+    if (clone.gallery && Array.isArray(clone.gallery)) {
+        clone.gallery.forEach((g, i) => {
+            if (g && g.image && g.image.startsWith('data:image/')) {
+                g.image = `kv:img_gallery_${g.id || i}`;
+            }
+        });
+    }
+    return clone;
+}
+
+// Collect all kv: references from data to know which image keys to fetch
+function collectKvImageKeys(data) {
+    const keys = [];
+    if (data.hero && data.hero.bg_image && data.hero.bg_image.startsWith('kv:')) {
+        keys.push(data.hero.bg_image.substring(3));
+    }
+    if (data.about && data.about.image && data.about.image.startsWith('kv:')) {
+        keys.push(data.about.image.substring(3));
+    }
+    if (data.services && Array.isArray(data.services)) {
+        data.services.forEach(s => {
+            if (s && s.image && s.image.startsWith('kv:')) {
+                keys.push(s.image.substring(3));
+            }
+        });
+    }
+    if (data.gallery && Array.isArray(data.gallery)) {
+        data.gallery.forEach(g => {
+            if (g && g.image && g.image.startsWith('kv:')) {
+                keys.push(g.image.substring(3));
+            }
+        });
+    }
+    return keys;
+}
+
+// Replace kv: references with actual image data from fetched images map
+function hydrateImages(data, imagesMap) {
+    if (data.hero && data.hero.bg_image && data.hero.bg_image.startsWith('kv:')) {
+        const key = data.hero.bg_image.substring(3);
+        if (imagesMap[key]) data.hero.bg_image = imagesMap[key];
+    }
+    if (data.about && data.about.image && data.about.image.startsWith('kv:')) {
+        const key = data.about.image.substring(3);
+        if (imagesMap[key]) data.about.image = imagesMap[key];
+    }
+    if (data.services && Array.isArray(data.services)) {
+        data.services.forEach(s => {
+            if (s && s.image && s.image.startsWith('kv:')) {
+                const key = s.image.substring(3);
+                if (imagesMap[key]) s.image = imagesMap[key];
+            }
+        });
+    }
+    if (data.gallery && Array.isArray(data.gallery)) {
+        data.gallery.forEach(g => {
+            if (g && g.image && g.image.startsWith('kv:')) {
+                const key = g.image.substring(3);
+                if (imagesMap[key]) g.image = imagesMap[key];
+            }
+        });
+    }
+    return data;
+}
+
 function saveDB(data) {
     window.isSaving = true; // Set saving flag to block background sync overwriting
     try {
@@ -319,6 +431,22 @@ async function fetchVercelKV() {
                 return null;
             }
 
+            // Check if cloud data has kv: image references and fetch them
+            const kvKeys = collectKvImageKeys(cloudData);
+            if (kvKeys.length > 0) {
+                try {
+                    const imgRes = await fetch('/api/get-image?keys=' + kvKeys.join(','));
+                    if (imgRes.ok) {
+                        const imgResult = await imgRes.json();
+                        if (imgResult.success && imgResult.images) {
+                            hydrateImages(cloudData, imgResult.images);
+                        }
+                    }
+                } catch (imgErr) {
+                    console.warn('Failed to fetch cloud images, using references:', imgErr);
+                }
+            }
+
             // Self-healing merge on cloud data as well to prevent local crashes
             healSchemaDeep(cloudData, DEFAULT_DB);
             
@@ -333,20 +461,59 @@ async function fetchVercelKV() {
 
 async function saveVercelKV(data, password) {
     try {
+        // Step 1: Upload each base64 image to its own KV key individually
+        const imageEntries = collectImageEntries(data);
+        
+        if (imageEntries.length > 0) {
+            console.log(`Uploading ${imageEntries.length} image(s) to cloud individually...`);
+            
+            const imageUploads = imageEntries.map(entry => {
+                return fetch('/api/save-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-admin-password': password
+                    },
+                    body: JSON.stringify({ key: entry.kvKey, imageData: entry.value })
+                }).then(res => {
+                    if (!res.ok) {
+                        console.error(`Failed to save image ${entry.kvKey}: HTTP ${res.status}`);
+                        return false;
+                    }
+                    return res.json().then(r => r.success);
+                }).catch(err => {
+                    console.error(`Failed to save image ${entry.kvKey}:`, err);
+                    return false;
+                });
+            });
+            
+            const imageResults = await Promise.all(imageUploads);
+            const allImagesSaved = imageResults.every(r => r === true);
+            
+            if (!allImagesSaved) {
+                console.warn('Some images failed to save individually. Continuing with main data save...');
+            } else {
+                console.log('All images uploaded to cloud successfully.');
+            }
+        }
+        
+        // Step 2: Save the main data WITHOUT base64 images (replaced with kv: references)
+        const strippedData = stripImagesForCloud(data);
+        
         const res = await fetch('/api/save-data', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'x-admin-password': password
             },
-            body: JSON.stringify({ data: data })
+            body: JSON.stringify({ data: strippedData })
         });
         
         if (!res.ok) {
             if (res.status === 413) {
-                console.error('Vercel KV save error: Payload too large (413).');
+                console.error('Vercel KV save error: Payload too large (413) even after image stripping.');
                 if (typeof window.showToast === 'function') {
-                    window.showToast('HATA: Yüklenen veriler çok büyük! Görsel boyutunu küçültün.', false);
+                    window.showToast('HATA: Veriler hâlâ çok büyük! Lütfen bazı galeri görsellerini silin.', false);
                 }
             } else {
                 console.error('Vercel KV save error: HTTP status ' + res.status);

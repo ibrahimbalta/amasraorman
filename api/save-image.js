@@ -2,7 +2,7 @@ export default async function handler(req, res) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-admin-password'
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Basic admin authentication matching 7467 credentials
+    // Basic admin authentication
     const adminPassword = req.headers['x-admin-password'] || req.body?.password;
     if (adminPassword !== '7467') {
       return res.status(401).json({
@@ -37,23 +37,22 @@ export default async function handler(req, res) {
       });
     }
 
-    const payload = req.body.data;
-    if (!payload) {
+    const { key, imageData } = req.body;
+    if (!key || !imageData) {
       return res.status(400).json({
         success: false,
-        error: 'Missing payload data.'
+        error: 'Missing key or imageData.'
       });
     }
 
-    // Save to Vercel KV under key 'amasra_site_data'
-    // Using robust Upstash REST API command array style ["SET", "key", "value"]
+    // Save image to its own KV key (e.g. "img_hero_bg", "img_service_0", etc.)
     const response = await fetch(kvUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${kvToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(['SET', 'amasra_site_data', JSON.stringify(payload)])
+      body: JSON.stringify(['SET', key, imageData])
     });
 
     const result = await response.json();
@@ -67,7 +66,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       success: true,
-      message: 'Data successfully synchronized with Vercel KV bulut veritabani!'
+      message: `Image saved to KV key: ${key}`
     });
   } catch (error) {
     return res.status(500).json({
@@ -77,7 +76,7 @@ export default async function handler(req, res) {
   }
 }
 
-// Increase bodyParser limit to 4.5mb (Vercel max serverless payload limit)
+// Each image is sent individually, so 4.5MB per image is more than enough
 export const config = {
   api: {
     bodyParser: {
