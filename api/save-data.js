@@ -77,3 +77,13 @@ export default async function handler(req, res) {
     });
   }
 }
+
+// Increase bodyParser limit to 4.5mb (Vercel max serverless payload limit)
+// This resolves the HTTP 413 (Payload Too Large) error when saving compressed base64 images
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '4.5mb'
+    }
+  }
+};

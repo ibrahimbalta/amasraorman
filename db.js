@@ -341,6 +341,19 @@ async function saveVercelKV(data, password) {
             },
             body: JSON.stringify({ data: data })
         });
+        
+        if (!res.ok) {
+            if (res.status === 413) {
+                console.error('Vercel KV save error: Payload too large (413).');
+                if (typeof window.showToast === 'function') {
+                    window.showToast('HATA: Yüklenen veriler çok büyük! Görsel boyutunu küçültün.', false);
+                }
+            } else {
+                console.error('Vercel KV save error: HTTP status ' + res.status);
+            }
+            return false;
+        }
+
         const result = await res.json();
         if (result.success) {
             console.log('Data successfully saved to Vercel KV bulut veritabanı!');
