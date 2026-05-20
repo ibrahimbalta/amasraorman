@@ -128,6 +128,97 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Helper: Compress a base64 string if it's a large image, returns same string if it's a URL or already small
+    const compressBase64Image = (src, maxWidth = 1200, maxHeight = 1200, quality = 0.7) => {
+        return new Promise((resolve) => {
+            if (!src || !src.startsWith('data:image/')) {
+                resolve(src);
+                return;
+            }
+            // If it's already very small (e.g. less than 150KB), don't waste time re-compressing
+            if (src.length < 200000) {
+                resolve(src);
+                return;
+            }
+
+            const img = new Image();
+            img.src = src;
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxWidth) {
+                    height = Math.round((height * maxWidth) / width);
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = Math.round((width * maxHeight) / height);
+                    height = maxHeight;
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const format = src.includes('image/png') ? 'image/png' : 'image/jpeg';
+                const dataUrl = canvas.toDataURL(format, quality);
+                resolve(dataUrl);
+            };
+            img.onerror = () => resolve(src);
+        });
+    };
+
+    // Clean up any pre-existing large base64 images inside db to free up space immediately
+    const cleanDatabaseImages = async () => {
+        try {
+            let modified = false;
+            
+            // 1. Hero bg_image
+            if (db.hero && db.hero.bg_image && db.hero.bg_image.startsWith('data:image/') && db.hero.bg_image.length > 200000) {
+                db.hero.bg_image = await compressBase64Image(db.hero.bg_image);
+                modified = true;
+            }
+            
+            // 2. About image
+            if (db.about && db.about.image && db.about.image.startsWith('data:image/') && db.about.image.length > 200000) {
+                db.about.image = await compressBase64Image(db.about.image);
+                modified = true;
+            }
+            
+            // 3. Services images
+            if (db.services && Array.isArray(db.services)) {
+                for (let i = 0; i < db.services.length; i++) {
+                    const s = db.services[i];
+                    if (s && s.image && s.image.startsWith('data:image/') && s.image.length > 200000) {
+                        s.image = await compressBase64Image(s.image);
+                        modified = true;
+                    }
+                }
+            }
+            
+            // 4. Gallery images
+            if (db.gallery && Array.isArray(db.gallery)) {
+                for (let i = 0; i < db.gallery.length; i++) {
+                    const item = db.gallery[i];
+                    if (item && item.image && item.image.startsWith('data:image/') && item.image.length > 200000) {
+                        item.image = await compressBase64Image(item.image);
+                        modified = true;
+                    }
+                }
+            }
+            
+            if (modified) {
+                console.log('Database images cleaned & compressed successfully.');
+                saveDB(db);
+            }
+        } catch (e) {
+            console.error('Failed to clean database images:', e);
+        }
+    };
+
     // Helper: Convert File to compressed Base64 String using Canvas
     const fileToBase64 = (file, maxWidth = 1200, maxHeight = 1200, quality = 0.7) => {
         return new Promise((resolve, reject) => {
@@ -205,7 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
             db.hero.title = document.getElementById('inp-heroTitle').value.trim();
             db.hero.description = document.getElementById('inp-heroDesc').value.trim();
             db.hero.whatsapp_text = document.getElementById('inp-heroWhatsApp').value.trim();
-            db.hero.bg_image = document.getElementById('prev-heroBg').src;
+            
+            let bgImgSrc = document.getElementById('prev-heroBg').src;
+            if (bgImgSrc.startsWith('data:image/')) {
+                bgImgSrc = await compressBase64Image(bgImgSrc);
+            }
+            db.hero.bg_image = bgImgSrc;
 
             saveDB(db);
             showToast('Ana Sayfa (Hero) bilgileri başarıyla güncellendi.');
@@ -243,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Form submission
-        document.getElementById('aboutForm').addEventListener('submit', (e) => {
+        document.getElementById('aboutForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             db.about.subtitle = document.getElementById('inp-aboutSubtitle').value.trim();
             db.about.title = document.getElementById('inp-aboutTitle').value.trim();
@@ -251,7 +347,12 @@ document.addEventListener('DOMContentLoaded', () => {
             db.about.desc2 = document.getElementById('inp-aboutDesc2').value.trim();
             db.about.experience_years = document.getElementById('inp-aboutYears').value.trim();
             db.about.experience_text = document.getElementById('inp-aboutExpText').value.trim();
-            db.about.image = document.getElementById('prev-aboutImg').src;
+            
+            let aboutImgSrc = document.getElementById('prev-aboutImg').src;
+            if (aboutImgSrc.startsWith('data:image/')) {
+                aboutImgSrc = await compressBase64Image(aboutImgSrc);
+            }
+            db.about.image = aboutImgSrc;
 
             // Features update
             db.about.features[0].title = document.getElementById('inp-aboutFeat1Title').value.trim();
@@ -327,25 +428,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Bind save service click
             const saveBtn = card.querySelector('.btn-save-service');
-            saveBtn.addEventListener('click', () => {
+            saveBtn.addEventListener('click', async () => {
                 const sId = parseInt(saveBtn.getAttribute('data-id'));
                 const titleVal = card.querySelector('.val-title').value.trim();
                 const descVal = card.querySelector('.val-desc').value.trim();
-                const imageVal = prevImg.src;
+                let imageVal = prevImg.src;
 
                 if (!titleVal || !descVal) {
                     showToast('Lütfen tüm alanları doldurun!', false);
                     return;
                 }
 
-                // Update db
-                const sIndex = db.services.findIndex(s => s.id === sId);
-                if (sIndex !== -1) {
+                // Compress imageVal if it's a giant base64
+                if (imageVal.startsWith('data:image/')) {
+                    imageVal = await compressBase64Image(imageVal);
+                }
+
+                // Update db with deep fallback support for ID discrepancies
+                let sIndex = db.services.findIndex(s => s.id === sId);
+                if (sIndex === -1) {
+                    sIndex = db.services.findIndex(s => String(s.id) === String(sId));
+                }
+                if (sIndex === -1) {
+                    sIndex = index; // Fallback to exact array index
+                }
+
+                if (sIndex !== -1 && db.services[sIndex]) {
                     db.services[sIndex].title = titleVal;
                     db.services[sIndex].desc = descVal;
                     db.services[sIndex].image = imageVal;
                     saveDB(db);
                     showToast(`"${titleVal}" hizmeti başarıyla güncellendi.`);
+                } else {
+                    showToast('Hizmet güncellenemedi! Hatalı indeks.', false);
                 }
             });
         });
@@ -409,14 +524,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Form Submission
-        document.getElementById('addGalleryForm').addEventListener('submit', (e) => {
+        document.getElementById('addGalleryForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const titleVal = document.getElementById('inp-galTitle').value.trim();
-            const imgVal = prevImg.src;
+            let imgVal = prevImg.src;
 
             if (!titleVal || !imgVal || prevImg.style.display === 'none') {
                 showToast('Lütfen resim yükleyin ve açıklama ekleyin!', false);
                 return;
+            }
+
+            if (imgVal.startsWith('data:image/')) {
+                imgVal = await compressBase64Image(imgVal);
             }
 
             // Add new gallery object
@@ -793,6 +912,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         renderMessages();
     };
+
+    // Run deep database cleanup for legacy giant base64 images in background
+    cleanDatabaseImages();
 
     // Initialize all components
     initMessages();
