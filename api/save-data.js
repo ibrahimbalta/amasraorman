@@ -46,13 +46,14 @@ export default async function handler(req, res) {
     }
 
     // Save to Vercel KV under key 'amasra_site_data'
+    // Single stringify — double stringify was bloating payload ~2x and exceeding Upstash limits
     const response = await fetch(`${kvUrl}/set/amasra_site_data`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${kvToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(JSON.stringify(payload))
+      body: JSON.stringify(payload)
     });
 
     const result = await response.json();

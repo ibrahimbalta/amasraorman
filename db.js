@@ -255,12 +255,27 @@ function getDB() {
 }
 
 function saveDB(data) {
-    localStorage.setItem(DB_KEY, JSON.stringify(data));
+    try {
+        localStorage.setItem(DB_KEY, JSON.stringify(data));
+    } catch (e) {
+        console.error('localStorage kayıt hatası (QuotaExceeded?):', e);
+        // Return a rejected promise immediately if localStorage fails
+        return Promise.reject(new Error('localStorage_quota'));
+    }
     
     // Automatically trigger background Vercel KV sync if helper is available
     if (typeof saveVercelKV === 'function') {
-        saveVercelKV(data, '7467').catch(err => console.log('KV sync omitted or running locally:', err));
+        return saveVercelKV(data, '7467').then(success => {
+            if (!success) {
+                return Promise.reject(new Error('kv_save_failed'));
+            }
+            return true;
+        }).catch(err => {
+            console.error('KV sync hatası:', err);
+            return Promise.reject(err);
+        });
     }
+    return Promise.resolve(true);
 }
 
 // Background Vercel KV Sync Helpers (SWR Pattern)
