@@ -9,15 +9,15 @@ const DEFAULT_DB = {
     hero: {
         badge: 'Tapulu Arazi Ağaç Değerlendirme',
         title: 'Arazinizdeki Ağaçları <span>En Yüksek Değerle</span> Kazanca Dönüştürün',
-        description: 'Tapulu arazilerinizde bulunan ağaçlarınızı, yasal mevzuata %100 uygun olarak, çevreye duyarlı profesyonel kesim yöntemleriyle en yüksek değerden ekonomiye kazandırıyoruz.',
+        description: 'Bartın, Zonguldak ve Karabük genelinde tapulu arazilerinizde bulunan ağaçlarınızı, yasal mevzuata %100 uygun olarak, çevreye duyarlı profesyonel kesim yöntemleriyle en yüksek değerden ekonomiye kazandırıyoruz.',
         bg_image: 'assets/hero_forest.png',
-        whatsapp_text: 'Merhaba, tapulu arazimdeki ağaçların kesimi ve değerlendirilmesi hakkında bilgi almak istiyorum.',
+        whatsapp_text: 'Merhaba, Bartın/Zonguldak/Karabük bölgesindeki tapulu arazimdeki ağaçların kesimi ve değerlendirilmesi hakkında bilgi almak istiyorum.',
         btn_secondary_text: 'Hizmetlerimizi Keşfet'
     },
     about: {
         subtitle: 'Biz Kimiz?',
-        title: 'Amasra Orman Ürünleri İle Güvenli ve Değerli Çözümler',
-        desc1: 'Bartın ve çevre illerde yılların verdiği deneyimle orman ürünleri ve profesyonel kesim hizmetleri sunmaktayız. Amacımız, tapulu arazilerinizdeki ağaç varlıklarınızı en şeffaf, yasal ve karlı şekilde yönetmenizi sağlamaktır.',
+        title: 'Bartın, Zonguldak ve Karabük Orman Ürünleri Çözümleri',
+        desc1: 'Bartın, Zonguldak ve Karabük başta olmak üzere Batı Karadeniz genelinde yılların verdiği deneyimle orman ürünleri ve profesyonel ağaç kesim hizmetleri sunmaktayız. Amacımız, tapulu arazilerinizdeki ağaç varlıklarınızı en şeffaf, yasal ve karlı şekilde yönetmenizi sağlamaktır.',
         desc2: 'Tüm süreç boyunca bürokratik kesim izinlerinden lojistiğe kadar her detayı uzman kadromuzla üstleniyor, ağaçlarınızı değerinin üstünde satın alarak doğrudan ekonomiye kazandırıyoruz.',
         experience_years: '15+',
         experience_text: 'Yıllık Ormancılık ve Sektör Tecrübesi',
@@ -25,11 +25,11 @@ const DEFAULT_DB = {
         features: [
             {
                 title: 'Resmi İzin Yönetimi',
-                desc: 'Tüm bürokratik başvuruları ve kesim izinlerini sizin yerinize yapıyoruz.'
+                desc: 'Bartın, Zonguldak ve Karabük\'teki tüm bürokratik başvuruları ve kesim izinlerini sizin yerinize yapıyoruz.'
             },
             {
                 title: 'Şeffaf Değerleme',
-                desc: 'Arazinizdeki ağaç cinsini ve kalitesini tam belirleyip nakit ödüyoruz.'
+                desc: 'Arazinizdeki ağaç cinsini ve kalitesini tam belirleyip piyasa üstü değerle nakit ödüyoruz.'
             }
         ]
     },
@@ -64,7 +64,7 @@ const DEFAULT_DB = {
             {
                 number: 1,
                 title: 'Ücretsiz Keşif & Analiz',
-                desc: 'Bartın genelindeki tapulu arazinize gelerek ağaç türlerini, yaşlarını, hacimlerini ve kalitelerini inceliyor, piyasa değerini hesaplayyoruz.',
+                desc: 'Bartın, Zonguldak ve Karabük genelindeki tapulu arazinize gelerek ağaç türlerini, yaşlarını, hacimlerini ve kalitelerini inceliyor, piyasa değerini hesaplıyoruz.',
                 icon: 'fa-compass'
             },
             {
@@ -90,7 +90,7 @@ const DEFAULT_DB = {
     why_choose: {
         subtitle: 'Neden Amasra Orman Ürünleri?',
         title: 'Arazinizin Değerini Biliyoruz ve Koruyoruz',
-        desc: 'Orman ürünleri sektöründe bizi öne çıkaran en önemli faktör, güven ve şeffaflık üzerine kurduğumuz iş modelimizdir. Ağaçlarınızı keserken arazinizin genel yapısına zarar vermez, iş güvenliğini her şeyin üstünde tutarız.',
+        desc: 'Bartın, Zonguldak, Karabük ve çevre ilçelerde orman ürünleri sektöründe bizi öne çıkaran en önemli faktör, güven ve şeffaflık üzerine kurduğumuz iş modelimizdir. Ağaçlarınızı keserken arazinizin genel yapısına zarar vermez, iş güvenliğini her şeyin üstünde tutarız.',
         cards: [
             {
                 title: 'En Yüksek Fiyat Garantisi',
