@@ -773,7 +773,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (typeof fetchVercelKV === 'function') {
         fetchVercelKV().then(cloudData => {
             if (cloudData) {
-                const localStr = localStorage.getItem('amasra_orman_db');
+                const localStr = JSON.stringify(db);
                 const cloudStr = JSON.stringify(cloudData);
                 if (localStr !== cloudStr) {
                     window.location.reload();

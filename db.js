@@ -179,6 +179,50 @@ const DEFAULT_DB = {
     ]
 };
 
+// Helper to recursively heal target schema from source schema
+function healSchemaDeep(target, source) {
+    let healed = false;
+    for (const key in source) {
+        if (target[key] === undefined || target[key] === null) {
+            target[key] = JSON.parse(JSON.stringify(source[key]));
+            healed = true;
+        } else if (typeof source[key] === 'object' && source[key] !== null) {
+            if (Array.isArray(source[key])) {
+                if (!Array.isArray(target[key])) {
+                    target[key] = JSON.parse(JSON.stringify(source[key]));
+                    healed = true;
+                } else {
+                    for (let i = 0; i < source[key].length; i++) {
+                        if (target[key][i] === undefined || target[key][i] === null) {
+                            target[key][i] = JSON.parse(JSON.stringify(source[key][i]));
+                            healed = true;
+                        } else if (typeof source[key][i] === 'object' && source[key][i] !== null) {
+                            if (typeof target[key][i] === 'object' && target[key][i] !== null) {
+                                if (healSchemaDeep(target[key][i], source[key][i])) {
+                                    healed = true;
+                                }
+                            } else {
+                                target[key][i] = JSON.parse(JSON.stringify(source[key][i]));
+                                healed = true;
+                            }
+                        }
+                    }
+                }
+            } else {
+                if (typeof target[key] === 'object' && target[key] !== null && !Array.isArray(target[key])) {
+                    if (healSchemaDeep(target[key], source[key])) {
+                        healed = true;
+                    }
+                } else {
+                    target[key] = JSON.parse(JSON.stringify(source[key]));
+                    healed = true;
+                }
+            }
+        }
+    }
+    return healed;
+}
+
 // Initialize DB
 function getDB() {
     try {
@@ -189,14 +233,8 @@ function getDB() {
         }
         const parsed = JSON.parse(localData);
         
-        // Self-healing schema validation: ensure all DEFAULT_DB keys exist
-        let healed = false;
-        for (const key in DEFAULT_DB) {
-            if (parsed[key] === undefined || parsed[key] === null) {
-                parsed[key] = DEFAULT_DB[key];
-                healed = true;
-            }
-        }
+        // Self-healing schema validation: ensure all DEFAULT_DB keys exist recursively
+        const healed = healSchemaDeep(parsed, DEFAULT_DB);
         if (healed) {
             localStorage.setItem(DB_KEY, JSON.stringify(parsed));
         }
@@ -227,13 +265,7 @@ async function fetchVercelKV() {
             const cloudData = result.data;
             
             // Self-healing merge on cloud data as well to prevent local crashes
-            let healed = false;
-            for (const key in DEFAULT_DB) {
-                if (cloudData[key] === undefined || cloudData[key] === null) {
-                    cloudData[key] = DEFAULT_DB[key];
-                    healed = true;
-                }
-            }
+            healSchemaDeep(cloudData, DEFAULT_DB);
             
             localStorage.setItem(DB_KEY, JSON.stringify(cloudData));
             return cloudData;
