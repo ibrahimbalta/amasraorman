@@ -266,3 +266,26 @@ async function saveVercelKV(data, password) {
     }
     return false;
 }
+
+// Atomic message submission to cloud (does NOT overwrite entire DB)
+async function submitMessageToCloud(message) {
+    try {
+        const res = await fetch('/api/submit-message', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: message })
+        });
+        const result = await res.json();
+        if (result.success) {
+            console.log('Message successfully submitted to cloud database!');
+            return true;
+        } else {
+            console.error('Cloud message submission error:', result.error);
+        }
+    } catch (e) {
+        console.error('Cloud message submission failed:', e);
+    }
+    return false;
+}

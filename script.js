@@ -337,7 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
 
-            // Generate new message and store in DB
+            // Generate new message
             if (!db.messages) db.messages = [];
             
             const newMsg = {
@@ -351,8 +351,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 status: 'new'
             };
 
+            // Save locally for immediate feedback
             db.messages.push(newMsg);
-            saveDB(db);
+            localStorage.setItem(DB_KEY, JSON.stringify(db));
+
+            // Send message atomically to cloud (won't overwrite admin data)
+            if (typeof submitMessageToCloud === 'function') {
+                submitMessageToCloud(newMsg).catch(err => console.log('Cloud message sync:', err));
+            }
 
             setTimeout(() => {
                 submitBtn.disabled = false;
