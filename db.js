@@ -491,7 +491,8 @@ async function saveVercelKV(data, password) {
             const allImagesSaved = imageResults.every(r => r === true);
             
             if (!allImagesSaved) {
-                console.warn('Some images failed to save individually. Continuing with main data save...');
+                console.error('Some images failed to save individually. Aborting main database save to prevent broken references.');
+                return false;
             } else {
                 console.log('All images uploaded to cloud successfully.');
             }

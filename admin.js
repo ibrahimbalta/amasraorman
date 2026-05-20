@@ -162,10 +162,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 canvas.height = height;
 
                 const ctx = canvas.getContext('2d');
+                // Fill background with white to support transparent PNG conversion to JPEG nicely
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, width, height);
                 ctx.drawImage(img, 0, 0, width, height);
 
-                const format = src.includes('image/png') ? 'image/png' : 'image/jpeg';
-                const dataUrl = canvas.toDataURL(format, quality);
+                // Always use image/jpeg for efficient compression, since PNG doesn't support quality parameter
+                const dataUrl = canvas.toDataURL('image/jpeg', quality);
                 resolve(dataUrl);
             };
             img.onerror = () => resolve(src);
@@ -254,10 +257,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     canvas.height = height;
 
                     const ctx = canvas.getContext('2d');
+                    // Fill background with white to support transparent PNG conversion to JPEG nicely
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, width, height);
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    const format = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
-                    const dataUrl = canvas.toDataURL(format, quality);
+                    // Always use image/jpeg for efficient compression, since PNG doesn't support quality parameter
+                    const dataUrl = canvas.toDataURL('image/jpeg', quality);
                     resolve(dataUrl);
                 };
                 img.onerror = (err) => reject(err);
