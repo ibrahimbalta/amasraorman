@@ -231,7 +231,15 @@ function getDB() {
             saveDB(DEFAULT_DB);
             return DEFAULT_DB;
         }
-        const parsed = JSON.parse(localData);
+        let parsed = JSON.parse(localData);
+        if (typeof parsed === 'string') {
+            try {
+                parsed = JSON.parse(parsed);
+            } catch (e) {
+                console.error('Failed parsing double-serialized local database:', e);
+                parsed = DEFAULT_DB;
+            }
+        }
         
         // Self-healing schema validation: ensure all DEFAULT_DB keys exist recursively
         const healed = healSchemaDeep(parsed, DEFAULT_DB);
@@ -262,7 +270,15 @@ async function fetchVercelKV() {
         if (!res.ok) return null;
         const result = await res.json();
         if (result.success && result.data) {
-            const cloudData = result.data;
+            let cloudData = result.data;
+            if (typeof cloudData === 'string') {
+                try {
+                    cloudData = JSON.parse(cloudData);
+                } catch (e) {
+                    console.error('Failed parsing double-serialized cloud data:', e);
+                    return null;
+                }
+            }
             
             // Self-healing merge on cloud data as well to prevent local crashes
             healSchemaDeep(cloudData, DEFAULT_DB);
