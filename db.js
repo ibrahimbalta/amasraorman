@@ -181,12 +181,31 @@ const DEFAULT_DB = {
 
 // Initialize DB
 function getDB() {
-    const db = localStorage.getItem(DB_KEY);
-    if (!db) {
-        saveDB(DEFAULT_DB);
+    try {
+        const localData = localStorage.getItem(DB_KEY);
+        if (!localData) {
+            saveDB(DEFAULT_DB);
+            return DEFAULT_DB;
+        }
+        const parsed = JSON.parse(localData);
+        
+        // Self-healing schema validation: ensure all DEFAULT_DB keys exist
+        let healed = false;
+        for (const key in DEFAULT_DB) {
+            if (parsed[key] === undefined || parsed[key] === null) {
+                parsed[key] = DEFAULT_DB[key];
+                healed = true;
+            }
+        }
+        if (healed) {
+            localStorage.setItem(DB_KEY, JSON.stringify(parsed));
+        }
+        return parsed;
+    } catch (e) {
+        console.error('Database corrupted or incomplete. Self-healing active: resetting to defaults.', e);
+        localStorage.setItem(DB_KEY, JSON.stringify(DEFAULT_DB));
         return DEFAULT_DB;
     }
-    return JSON.parse(db);
 }
 
 function saveDB(data) {
@@ -205,8 +224,19 @@ async function fetchVercelKV() {
         if (!res.ok) return null;
         const result = await res.json();
         if (result.success && result.data) {
-            localStorage.setItem(DB_KEY, JSON.stringify(result.data));
-            return result.data;
+            const cloudData = result.data;
+            
+            // Self-healing merge on cloud data as well to prevent local crashes
+            let healed = false;
+            for (const key in DEFAULT_DB) {
+                if (cloudData[key] === undefined || cloudData[key] === null) {
+                    cloudData[key] = DEFAULT_DB[key];
+                    healed = true;
+                }
+            }
+            
+            localStorage.setItem(DB_KEY, JSON.stringify(cloudData));
+            return cloudData;
         }
     } catch (e) {
         console.warn('Vercel KV sync offline or running locally:', e);
