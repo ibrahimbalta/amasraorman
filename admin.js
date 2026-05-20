@@ -112,6 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toast.classList.remove('show');
         }, 3000);
     };
+    window.showToast = showToast;
 
     // 2. Tab Navigation
     const menuButtons = document.querySelectorAll('.admin-menu-btn');

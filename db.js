@@ -259,7 +259,9 @@ function saveDB(data) {
         localStorage.setItem(DB_KEY, JSON.stringify(data));
     } catch (e) {
         console.error('localStorage kayıt hatası (QuotaExceeded?):', e);
-        // Return a rejected promise immediately if localStorage fails
+        if (typeof window.showToast === 'function') {
+            window.showToast('HATA: Tarayıcı hafızası dolu! Görsel çok büyük olabilir.', false);
+        }
         return Promise.reject(new Error('localStorage_quota'));
     }
     
@@ -267,11 +269,17 @@ function saveDB(data) {
     if (typeof saveVercelKV === 'function') {
         return saveVercelKV(data, '7467').then(success => {
             if (!success) {
+                if (typeof window.showToast === 'function') {
+                    window.showToast('HATA: Bulut veritabanına kaydedilemedi! Değişiklikler kalıcı olmayabilir.', false);
+                }
                 return Promise.reject(new Error('kv_save_failed'));
             }
             return true;
         }).catch(err => {
             console.error('KV sync hatası:', err);
+            if (typeof window.showToast === 'function') {
+                window.showToast('HATA: Bulut senkronizasyon hatası oluştu!', false);
+            }
             return Promise.reject(err);
         });
     }
