@@ -2177,5 +2177,19 @@ textarea.admin-form-input {
     display: block;
 }
 
+.btn-danger {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-danger:hover {
+    background-color: #ef4444;
+    color: white;
+}
+
+
 
 

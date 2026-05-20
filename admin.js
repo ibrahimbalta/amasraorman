@@ -395,8 +395,26 @@ document.addEventListener('DOMContentLoaded', () => {
                             <input type="text" class="admin-form-input val-title" value="${service.title}" required>
                         </div>
                         <div class="admin-form-group">
+                            <label class="admin-form-label">Hizmet İkonu Seçiniz</label>
+                            <select class="admin-form-input val-icon" required>
+                                <option value="fa-tree" ${service.icon === 'fa-tree' ? 'selected' : ''}>Ağaç / Orman (fa-tree)</option>
+                                <option value="fa-leaf" ${service.icon === 'fa-leaf' ? 'selected' : ''}>Yaprak / Peyzaj (fa-leaf)</option>
+                                <option value="fa-trowel-bricks" ${service.icon === 'fa-trowel-bricks' ? 'selected' : ''}>İnşaat / Tuğla (fa-trowel-bricks)</option>
+                                <option value="fa-file-shield" ${service.icon === 'fa-file-shield' ? 'selected' : ''}>Dosya Güvenliği / İzinler (fa-file-shield)</option>
+                                <option value="fa-coins" ${service.icon === 'fa-coins' ? 'selected' : ''}>Para / Kazanç (fa-coins)</option>
+                                <option value="fa-seedling" ${service.icon === 'fa-seedling' ? 'selected' : ''}>Fidan / Tarım (fa-seedling)</option>
+                                <option value="fa-truck" ${service.icon === 'fa-truck' ? 'selected' : ''}>Kamyon / Nakliye (fa-truck)</option>
+                                <option value="fa-house-chimney" ${service.icon === 'fa-house-chimney' ? 'selected' : ''}>Ev / Ahşap (fa-house-chimney)</option>
+                                <option value="fa-fire" ${service.icon === 'fa-fire' ? 'selected' : ''}>Odun / Ateş (fa-fire)</option>
+                                <option value="fa-shield-halved" ${service.icon === 'fa-shield-halved' ? 'selected' : ''}>Güvenlik / Koruma (fa-shield-halved)</option>
+                                <option value="fa-screwdriver-wrench" ${service.icon === 'fa-screwdriver-wrench' ? 'selected' : ''}>Tamirat / Ekipman (fa-screwdriver-wrench)</option>
+                                <option value="fa-mountain" ${service.icon === 'fa-mountain' ? 'selected' : ''}>Dağ / Arazi (fa-mountain)</option>
+                                <option value="fa-compass" ${service.icon === 'fa-compass' ? 'selected' : ''}>Pusula / Keşif (fa-compass)</option>
+                            </select>
+                        </div>
+                        <div class="admin-form-group">
                             <label class="admin-form-label">Hizmet Açıklaması</label>
-                            <textarea class="admin-form-input val-desc" required>${service.desc}</textarea>
+                            <textarea class="admin-form-input val-desc" required style="height: 120px;">${service.desc}</textarea>
                         </div>
                     </div>
                     <div>
@@ -412,9 +430,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
                 </div>
-                <button type="button" class="btn btn-primary btn-save-service" data-id="${service.id}" style="padding: 10px 20px; font-size: 0.9rem;">
-                    <i class="fa-solid fa-save"></i> Bu Hizmeti Kaydet
-                </button>
+                <div style="display: flex; gap: 15px; margin-top: 15px;">
+                    <button type="button" class="btn btn-primary btn-save-service" data-id="${service.id}" style="padding: 10px 20px; font-size: 0.9rem;">
+                        <i class="fa-solid fa-save"></i> Bu Hizmeti Kaydet
+                    </button>
+                    <button type="button" class="btn btn-danger btn-delete-service" data-id="${service.id}" style="padding: 10px 20px; font-size: 0.9rem;">
+                        <i class="fa-solid fa-trash"></i> Bu Hizmeti Sil
+                    </button>
+                </div>
             `;
 
             container.appendChild(card);
@@ -439,6 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sId = parseInt(saveBtn.getAttribute('data-id'));
                 const titleVal = card.querySelector('.val-title').value.trim();
                 const descVal = card.querySelector('.val-desc').value.trim();
+                const iconVal = card.querySelector('.val-icon').value;
                 let imageVal = prevImg.src;
 
                 if (!titleVal || !descVal) {
@@ -464,12 +488,88 @@ document.addEventListener('DOMContentLoaded', () => {
                     db.services[sIndex].title = titleVal;
                     db.services[sIndex].desc = descVal;
                     db.services[sIndex].image = imageVal;
+                    db.services[sIndex].icon = iconVal;
                     saveDB(db);
                     showToast(`"${titleVal}" hizmeti başarıyla güncellendi.`);
+                    initServices();
                 } else {
                     showToast('Hizmet güncellenemedi! Hatalı indeks.', false);
                 }
             });
+
+            // Bind delete button
+            const deleteBtn = card.querySelector('.btn-delete-service');
+            deleteBtn.addEventListener('click', () => {
+                const sId = parseInt(deleteBtn.getAttribute('data-id'));
+                if (confirm(`"${service.title}" hizmetini silmek istediğinize emin misiniz?`)) {
+                    db.services = db.services.filter(s => s.id !== sId && String(s.id) !== String(sId));
+                    saveDB(db);
+                    showToast('Hizmet başarıyla silindi.');
+                    initServices();
+                }
+            });
+        });
+    };
+
+    const initAddServiceForm = () => {
+        const fileInput = document.getElementById('inp-serviceFile');
+        const prevImg = document.getElementById('prev-serviceImg');
+        const prevText = document.getElementById('prev-serviceText');
+        const addServiceForm = document.getElementById('addServiceForm');
+
+        if (!addServiceForm) return;
+
+        // File upload trigger preview
+        fileInput.addEventListener('change', async (e) => {
+            if (e.target.files.length > 0) {
+                try {
+                    const base64 = await fileToBase64(e.target.files[0]);
+                    prevImg.src = base64;
+                    prevImg.style.display = 'block';
+                    prevText.style.display = 'none';
+                } catch (err) {
+                    showToast('Görsel okunamadı!', false);
+                }
+            }
+        });
+
+        // Form Submission
+        addServiceForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const titleVal = document.getElementById('inp-serviceTitle').value.trim();
+            const descVal = document.getElementById('inp-serviceDesc').value.trim();
+            const iconVal = document.getElementById('inp-serviceIcon').value;
+            let imgVal = prevImg.src;
+
+            if (!titleVal || !descVal || !imgVal || prevImg.style.display === 'none') {
+                showToast('Lütfen resim yükleyin, başlık ve açıklama ekleyin!', false);
+                return;
+            }
+
+            if (imgVal.startsWith('data:image/')) {
+                imgVal = await compressBase64Image(imgVal);
+            }
+
+            // Add new service object
+            const newService = {
+                id: Date.now(),
+                title: titleVal,
+                desc: descVal,
+                image: imgVal,
+                icon: iconVal
+            };
+
+            db.services.push(newService); // Append to existing services
+            saveDB(db);
+
+            // Reset Form
+            addServiceForm.reset();
+            prevImg.src = '';
+            prevImg.style.display = 'none';
+            prevText.style.display = 'block';
+
+            initServices(); // Re-render the existing services lists
+            showToast('Yeni hizmet başarıyla eklendi ve yayına alındı!');
         });
     };
 
@@ -928,6 +1028,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initHero();
     initAbout();
     initServices();
+    initAddServiceForm();
     initGalleryForm();
     initProcess();
     initWhy();
