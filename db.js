@@ -368,6 +368,8 @@ function hydrateImages(data, imagesMap) {
 
 function saveDB(data) {
     window.isSaving = true; // Set saving flag to block background sync overwriting
+    // Stamp the save time so SWR sync can compare and avoid overwriting newer local data
+    data._saveTimestamp = Date.now();
     try {
         localStorage.setItem(DB_KEY, JSON.stringify(data));
     } catch (e) {
@@ -411,7 +413,7 @@ async function fetchVercelKV() {
         return null;
     }
     try {
-        const res = await fetch('/api/get-data');
+        const res = await fetch('/api/get-data?_t=' + Date.now());
         if (!res.ok) return null;
         const result = await res.json();
         if (result.success && result.data) {
@@ -433,22 +435,58 @@ async function fetchVercelKV() {
 
             // Check if cloud data has kv: image references and fetch them
             const kvKeys = collectKvImageKeys(cloudData);
+            let allImagesHydrated = true;
             if (kvKeys.length > 0) {
                 try {
-                    const imgRes = await fetch('/api/get-image?keys=' + kvKeys.join(','));
+                    const imgRes = await fetch('/api/get-image?keys=' + kvKeys.join(',') + '&_t=' + Date.now());
                     if (imgRes.ok) {
                         const imgResult = await imgRes.json();
                         if (imgResult.success && imgResult.images) {
                             hydrateImages(cloudData, imgResult.images);
+                            // Check if any kv: references remain unhydrated
+                            const remainingKvKeys = collectKvImageKeys(cloudData);
+                            if (remainingKvKeys.length > 0) {
+                                allImagesHydrated = false;
+                                console.warn('Some cloud images could not be hydrated:', remainingKvKeys);
+                            }
+                        } else {
+                            allImagesHydrated = false;
                         }
+                    } else {
+                        allImagesHydrated = false;
                     }
                 } catch (imgErr) {
+                    allImagesHydrated = false;
                     console.warn('Failed to fetch cloud images, using references:', imgErr);
                 }
             }
 
             // Self-healing merge on cloud data as well to prevent local crashes
             healSchemaDeep(cloudData, DEFAULT_DB);
+            
+            // CRITICAL: Compare timestamps before overwriting localStorage
+            // If local data is newer than cloud data, do NOT overwrite
+            try {
+                const currentLocalRaw = localStorage.getItem(DB_KEY);
+                if (currentLocalRaw) {
+                    const currentLocal = JSON.parse(currentLocalRaw);
+                    const localTimestamp = currentLocal._saveTimestamp || 0;
+                    const cloudTimestamp = cloudData._saveTimestamp || 0;
+                    
+                    if (localTimestamp >= cloudTimestamp) {
+                        console.log('Local data is newer than or identical to cloud data (local: ' + localTimestamp + ', cloud: ' + cloudTimestamp + '). Skipping cloud overwrite.');
+                        return null;
+                    }
+                    
+                    // Also protect: if local has base64 images but cloud has unhydrated kv: refs or old URLs
+                    if (!allImagesHydrated) {
+                        console.log('Cloud images could not be fully hydrated. Skipping cloud overwrite to preserve local images.');
+                        return null;
+                    }
+                }
+            } catch (compareErr) {
+                console.warn('Could not compare local vs cloud timestamps:', compareErr);
+            }
             
             localStorage.setItem(DB_KEY, JSON.stringify(cloudData));
             return cloudData;
