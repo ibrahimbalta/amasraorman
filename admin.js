@@ -1,0 +1,640 @@
+/* ==========================================================================
+   Amasra Orman Ürünleri - Admin Controller Logic (admin.js)
+   ========================================================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Session Auth Check
+    const adminDashboard = document.getElementById('adminDashboard');
+    const adminLogin = document.getElementById('adminLogin');
+    const loginForm = document.getElementById('adminLoginForm');
+    const loginError = document.getElementById('loginErrorMsg');
+    const logoutBtn = document.getElementById('adminLogoutBtn');
+
+    const checkAuth = () => {
+        const isLoggedIn = sessionStorage.getItem('admin_logged_in') === 'true';
+        if (isLoggedIn) {
+            adminDashboard.style.display = 'block';
+            adminLogin.style.display = 'none';
+        } else {
+            adminDashboard.style.display = 'none';
+            adminLogin.style.display = 'flex';
+        }
+    };
+
+    // Bind login form submit
+    if (loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const usernameVal = document.getElementById('login-username').value.trim();
+            const passwordVal = document.getElementById('login-password').value.trim();
+
+            if (usernameVal === 'kmelemez' && passwordVal === '7467') {
+                sessionStorage.setItem('admin_logged_in', 'true');
+                loginError.style.display = 'none';
+                checkAuth();
+                showToast('Yönetim paneline başarıyla giriş yapıldı.');
+            } else {
+                loginError.style.display = 'flex';
+                // Shake card animation
+                const card = document.querySelector('.admin-login-card');
+                if (card) {
+                    card.style.animation = 'none';
+                    card.offsetHeight; // trigger reflow
+                    card.style.animation = 'shake 0.3s ease';
+                }
+            }
+        });
+    }
+
+    // Bind logout button
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+            sessionStorage.removeItem('admin_logged_in');
+            window.location.reload();
+        });
+    }
+
+    // Mobile Hamburger Menu for Admin Dashboard
+    const adminMobileToggle = document.getElementById('adminMobileToggle');
+    const adminSidebar = document.querySelector('.admin-sidebar');
+
+    if (adminMobileToggle && adminSidebar) {
+        const toggleAdminSidebar = () => {
+            adminSidebar.classList.toggle('active');
+            const icon = adminMobileToggle.querySelector('i');
+            if (adminSidebar.classList.contains('active')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        };
+
+        adminMobileToggle.addEventListener('click', toggleAdminSidebar);
+
+        // Auto close sidebar when an item is selected on mobile screens
+        const adminMenuBtns = document.querySelectorAll('.admin-menu-btn');
+        adminMenuBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (window.innerWidth < 992 && adminSidebar.classList.contains('active')) {
+                    toggleAdminSidebar();
+                }
+            });
+        });
+    }
+
+    // Run initial auth check
+    checkAuth();
+
+    // Get database state
+    const db = getDB();
+
+    // 1. Toast Notification Helper
+    const toast = document.getElementById('adminToast');
+    const toastMsg = document.getElementById('adminToastMsg');
+
+    const showToast = (msg, success = true) => {
+        toastMsg.textContent = msg;
+        const icon = toast.querySelector('i');
+        if (success) {
+            icon.className = 'fa-solid fa-circle-check';
+            icon.style.color = '#D4AF37'; // gold
+            toast.style.borderLeftColor = '#D4AF37';
+        } else {
+            icon.className = 'fa-solid fa-triangle-exclamation';
+            icon.style.color = '#EF4444'; // red
+            toast.style.borderLeftColor = '#EF4444';
+        }
+        
+        toast.classList.add('show');
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    };
+
+    // 2. Tab Navigation
+    const menuButtons = document.querySelectorAll('.admin-menu-btn');
+    const sections = document.querySelectorAll('.admin-section');
+
+    menuButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+            menuButtons.forEach(b => b.classList.remove('active'));
+            sections.forEach(s => s.classList.remove('active'));
+
+            btn.classList.add('active');
+            const targetId = btn.getAttribute('data-target');
+            document.getElementById(targetId).classList.add('active');
+        });
+    });
+
+    // Helper: Convert File to Base64 String
+    const fileToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = error => reject(error);
+        });
+    };
+
+    // 3. Load & Save HERO SECTION
+    const initHero = () => {
+        document.getElementById('inp-heroBadge').value = db.hero.badge;
+        document.getElementById('inp-heroSecondary').value = db.hero.btn_secondary_text;
+        document.getElementById('inp-heroTitle').value = db.hero.title;
+        document.getElementById('inp-heroDesc').value = db.hero.description;
+        document.getElementById('inp-heroWhatsApp').value = db.hero.whatsapp_text;
+        document.getElementById('prev-heroBg').src = db.hero.bg_image;
+
+        // Image upload preview trigger
+        const fileInput = document.getElementById('inp-heroBgFile');
+        fileInput.addEventListener('change', async (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                try {
+                    const base64 = await fileToBase64(file);
+                    document.getElementById('prev-heroBg').src = base64;
+                } catch (err) {
+                    showToast('Görsel okunamadı!', false);
+                }
+            }
+        });
+
+        // Form submission
+        document.getElementById('heroForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            db.hero.badge = document.getElementById('inp-heroBadge').value.trim();
+            db.hero.btn_secondary_text = document.getElementById('inp-heroSecondary').value.trim();
+            db.hero.title = document.getElementById('inp-heroTitle').value.trim();
+            db.hero.description = document.getElementById('inp-heroDesc').value.trim();
+            db.hero.whatsapp_text = document.getElementById('inp-heroWhatsApp').value.trim();
+            db.hero.bg_image = document.getElementById('prev-heroBg').src;
+
+            saveDB(db);
+            showToast('Ana Sayfa (Hero) bilgileri başarıyla güncellendi.');
+        });
+    };
+
+    // 4. Load & Save ABOUT SECTION
+    const initAbout = () => {
+        document.getElementById('inp-aboutSubtitle').value = db.about.subtitle;
+        document.getElementById('inp-aboutTitle').value = db.about.title;
+        document.getElementById('inp-aboutDesc1').value = db.about.desc1;
+        document.getElementById('inp-aboutDesc2').value = db.about.desc2;
+        document.getElementById('inp-aboutYears').value = db.about.experience_years;
+        document.getElementById('inp-aboutExpText').value = db.about.experience_text;
+        document.getElementById('prev-aboutImg').src = db.about.image;
+
+        // Load 2 sub features
+        document.getElementById('inp-aboutFeat1Title').value = db.about.features[0].title;
+        document.getElementById('inp-aboutFeat1Desc').value = db.about.features[0].desc;
+        document.getElementById('inp-aboutFeat2Title').value = db.about.features[1].title;
+        document.getElementById('inp-aboutFeat2Desc').value = db.about.features[1].desc;
+
+        // Image preview
+        const fileInput = document.getElementById('inp-aboutImageFile');
+        fileInput.addEventListener('change', async (e) => {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                try {
+                    const base64 = await fileToBase64(file);
+                    document.getElementById('prev-aboutImg').src = base64;
+                } catch (err) {
+                    showToast('Görsel yükleme hatası!', false);
+                }
+            }
+        });
+
+        // Form submission
+        document.getElementById('aboutForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.about.subtitle = document.getElementById('inp-aboutSubtitle').value.trim();
+            db.about.title = document.getElementById('inp-aboutTitle').value.trim();
+            db.about.desc1 = document.getElementById('inp-aboutDesc1').value.trim();
+            db.about.desc2 = document.getElementById('inp-aboutDesc2').value.trim();
+            db.about.experience_years = document.getElementById('inp-aboutYears').value.trim();
+            db.about.experience_text = document.getElementById('inp-aboutExpText').value.trim();
+            db.about.image = document.getElementById('prev-aboutImg').src;
+
+            // Features update
+            db.about.features[0].title = document.getElementById('inp-aboutFeat1Title').value.trim();
+            db.about.features[0].desc = document.getElementById('inp-aboutFeat1Desc').value.trim();
+            db.about.features[1].title = document.getElementById('inp-aboutFeat2Title').value.trim();
+            db.about.features[1].desc = document.getElementById('inp-aboutFeat2Desc').value.trim();
+
+            saveDB(db);
+            showToast('Hakkımızda bilgileri başarıyla güncellendi.');
+        });
+    };
+
+    // 5. Load & Save SERVICES SECTION
+    const initServices = () => {
+        const container = document.getElementById('servicesFormContainer');
+        container.innerHTML = ''; // reset
+
+        db.services.forEach((service, index) => {
+            const card = document.createElement('div');
+            card.className = 'admin-card';
+            card.style.backgroundColor = 'var(--bg-light)';
+            card.style.borderColor = 'rgba(13,44,29,0.08)';
+
+            card.innerHTML = `
+                <h3 style="margin-bottom: 20px; font-size: 1.15rem; color: var(--primary-deep); display: flex; align-items: center; justify-content: space-between;">
+                    <span>Hizmet #${index + 1}: ${service.title}</span>
+                    <i class="fa-solid ${service.icon}" style="color: var(--accent);"></i>
+                </h3>
+                <div class="admin-grid-2">
+                    <div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Hizmet Başlığı</label>
+                            <input type="text" class="admin-form-input val-title" value="${service.title}" required>
+                        </div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Hizmet Açıklaması</label>
+                            <textarea class="admin-form-input val-desc" required>${service.desc}</textarea>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Görsel Seç (Yükle)</label>
+                            <input type="file" class="admin-form-input val-file" accept="image/*">
+                        </div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label">Görsel Önizleme</label>
+                            <div class="admin-img-preview" style="height: 100px;">
+                                <img class="val-prev-img" src="${service.image}" alt="${service.title}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-save-service" data-id="${service.id}" style="padding: 10px 20px; font-size: 0.9rem;">
+                    <i class="fa-solid fa-save"></i> Bu Hizmeti Kaydet
+                </button>
+            `;
+
+            container.appendChild(card);
+
+            // Bind image upload logic
+            const fileInput = card.querySelector('.val-file');
+            const prevImg = card.querySelector('.val-prev-img');
+            fileInput.addEventListener('change', async (e) => {
+                if (e.target.files.length > 0) {
+                    try {
+                        const base64 = await fileToBase64(e.target.files[0]);
+                        prevImg.src = base64;
+                    } catch (err) {
+                        showToast('Görsel yüklenemedi!', false);
+                    }
+                }
+            });
+
+            // Bind save service click
+            const saveBtn = card.querySelector('.btn-save-service');
+            saveBtn.addEventListener('click', () => {
+                const sId = parseInt(saveBtn.getAttribute('data-id'));
+                const titleVal = card.querySelector('.val-title').value.trim();
+                const descVal = card.querySelector('.val-desc').value.trim();
+                const imageVal = prevImg.src;
+
+                if (!titleVal || !descVal) {
+                    showToast('Lütfen tüm alanları doldurun!', false);
+                    return;
+                }
+
+                // Update db
+                const sIndex = db.services.findIndex(s => s.id === sId);
+                if (sIndex !== -1) {
+                    db.services[sIndex].title = titleVal;
+                    db.services[sIndex].desc = descVal;
+                    db.services[sIndex].image = imageVal;
+                    saveDB(db);
+                    showToast(`"${titleVal}" hizmeti başarıyla güncellendi.`);
+                }
+            });
+        });
+    };
+
+    // 6. Load & Save GALLERY SECTION
+    const renderGallery = () => {
+        const container = document.getElementById('adminGalleryItems');
+        container.innerHTML = ''; // reset
+
+        if (db.gallery.length === 0) {
+            container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px;">Galeride henüz resim bulunmuyor.</div>';
+            return;
+        }
+
+        db.gallery.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'admin-item-card';
+            card.innerHTML = `
+                <div class="admin-item-img">
+                    <img src="${item.image}" alt="${item.title}">
+                    <div class="admin-item-actions">
+                        <button class="admin-item-btn btn-delete-gal" data-id="${item.id}" title="Resmi Sil">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="admin-item-info">
+                    <div class="admin-item-title">${item.title}</div>
+                </div>
+            `;
+            container.appendChild(card);
+
+            // Bind delete button
+            card.querySelector('.btn-delete-gal').addEventListener('click', () => {
+                db.gallery = db.gallery.filter(g => g.id !== item.id);
+                saveDB(db);
+                renderGallery();
+                showToast('Görsel galeriden silindi.');
+            });
+        });
+    };
+
+    const initGalleryForm = () => {
+        const fileInput = document.getElementById('inp-galFile');
+        const prevImg = document.getElementById('prev-galImg');
+        const prevText = document.getElementById('prev-galText');
+
+        // File upload trigger preview
+        fileInput.addEventListener('change', async (e) => {
+            if (e.target.files.length > 0) {
+                try {
+                    const base64 = await fileToBase64(e.target.files[0]);
+                    prevImg.src = base64;
+                    prevImg.style.display = 'block';
+                    prevText.style.display = 'none';
+                } catch (err) {
+                    showToast('Görsel okunamadı!', false);
+                }
+            }
+        });
+
+        // Form Submission
+        document.getElementById('addGalleryForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const titleVal = document.getElementById('inp-galTitle').value.trim();
+            const imgVal = prevImg.src;
+
+            if (!titleVal || !imgVal || prevImg.style.display === 'none') {
+                showToast('Lütfen resim yükleyin ve açıklama ekleyin!', false);
+                return;
+            }
+
+            // Add new gallery object
+            const newGal = {
+                id: Date.now(),
+                title: titleVal,
+                image: imgVal
+            };
+
+            db.gallery.unshift(newGal); // Add to the top
+            saveDB(db);
+
+            // Reset Form
+            document.getElementById('addGalleryForm').reset();
+            prevImg.src = '';
+            prevImg.style.display = 'none';
+            prevText.style.display = 'block';
+
+            renderGallery();
+            showToast('Görsel başarıyla galeriye eklendi!');
+        });
+
+        renderGallery();
+    };
+
+    // 7. Load & Save PROCESS TIMELINE
+    const initProcess = () => {
+        // Headers
+        document.getElementById('inp-procSubtitle').value = db.process.subtitle;
+        document.getElementById('inp-procTitle').value = db.process.title;
+        document.getElementById('inp-procDesc').value = db.process.desc;
+
+        document.getElementById('processHeaderForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.process.subtitle = document.getElementById('inp-procSubtitle').value.trim();
+            db.process.title = document.getElementById('inp-procTitle').value.trim();
+            db.process.desc = document.getElementById('inp-procDesc').value.trim();
+            saveDB(db);
+            showToast('İşleyiş süreci başlıkları kaydedildi.');
+        });
+
+        // Render steps list
+        const container = document.getElementById('processStepsContainer');
+        container.innerHTML = ''; // reset
+
+        db.process.steps.forEach((step, index) => {
+            const box = document.createElement('div');
+            box.className = 'admin-card';
+            box.style.backgroundColor = 'var(--bg-light)';
+            box.style.marginBottom = '20px';
+            box.style.padding = '20px';
+
+            box.innerHTML = `
+                <h4 style="margin-bottom: 15px; color: var(--primary-deep); font-size: 1.05rem;">Adım #${step.number}: ${step.title}</h4>
+                <div class="admin-grid-2">
+                    <div class="admin-form-group" style="margin-bottom: 0;">
+                        <label class="admin-form-label">Adım Başlığı</label>
+                        <input type="text" class="admin-form-input step-val-title" value="${step.title}" required>
+                    </div>
+                    <div class="admin-form-group" style="margin-bottom: 0;">
+                        <label class="admin-form-label">Adım Açıklaması</label>
+                        <input type="text" class="admin-form-input step-val-desc" value="${step.desc}" required>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-save-step" data-num="${step.number}" style="margin-top: 15px; padding: 8px 16px; font-size: 0.85rem;">
+                    <i class="fa-solid fa-save"></i> Adımı Kaydet
+                </button>
+            `;
+            container.appendChild(box);
+
+            box.querySelector('.btn-save-step').addEventListener('click', () => {
+                const sNum = parseInt(box.querySelector('.btn-save-step').getAttribute('data-num'));
+                const tVal = box.querySelector('.step-val-title').value.trim();
+                const dVal = box.querySelector('.step-val-desc').value.trim();
+
+                if (!tVal || !dVal) {
+                    showToast('Lütfen tüm alanları doldurun!', false);
+                    return;
+                }
+
+                const sIndex = db.process.steps.findIndex(s => s.number === sNum);
+                if (sIndex !== -1) {
+                    db.process.steps[sIndex].title = tVal;
+                    db.process.steps[sIndex].desc = dVal;
+                    saveDB(db);
+                    showToast(`Adım #${sNum} başarıyla güncellendi.`);
+                }
+            });
+        });
+    };
+
+    // 8. Load & Save WHY CHOOSE US
+    const initWhy = () => {
+        document.getElementById('inp-whySubtitle').value = db.why_choose.subtitle;
+        document.getElementById('inp-whyTitle').value = db.why_choose.title;
+        document.getElementById('inp-whyDesc').value = db.why_choose.desc;
+
+        document.getElementById('whyHeaderForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.why_choose.subtitle = document.getElementById('inp-whySubtitle').value.trim();
+            db.why_choose.title = document.getElementById('inp-whyTitle').value.trim();
+            db.why_choose.desc = document.getElementById('inp-whyDesc').value.trim();
+            saveDB(db);
+            showToast('Neden biz başlıkları güncellendi.');
+        });
+
+        // Cards list
+        const container = document.getElementById('whyCardsContainer');
+        container.innerHTML = '';
+
+        db.why_choose.cards.forEach((card, index) => {
+            const box = document.createElement('div');
+            box.className = 'admin-card';
+            box.style.backgroundColor = 'var(--bg-light)';
+            box.style.marginBottom = '20px';
+            box.style.padding = '20px';
+
+            box.innerHTML = `
+                <h4 style="margin-bottom: 15px; color: var(--primary-deep); font-size: 1.05rem;"><i class="fa-solid ${card.icon}" style="color: var(--accent);"></i> Kart #${index + 1}: ${card.title}</h4>
+                <div class="admin-grid-2">
+                    <div class="admin-form-group" style="margin-bottom: 0;">
+                        <label class="admin-form-label">Kart Başlığı</label>
+                        <input type="text" class="admin-form-input card-val-title" value="${card.title}" required>
+                    </div>
+                    <div class="admin-form-group" style="margin-bottom: 0;">
+                        <label class="admin-form-label">Kart Açıklaması</label>
+                        <input type="text" class="admin-form-input card-val-desc" value="${card.desc}" required>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-primary btn-save-why" data-idx="${index}" style="margin-top: 15px; padding: 8px 16px; font-size: 0.85rem;">
+                    <i class="fa-solid fa-save"></i> Kartı Kaydet
+                </button>
+            `;
+            container.appendChild(box);
+
+            box.querySelector('.btn-save-why').addEventListener('click', () => {
+                const cIdx = parseInt(box.querySelector('.btn-save-why').getAttribute('data-idx'));
+                const tVal = box.querySelector('.card-val-title').value.trim();
+                const dVal = box.querySelector('.card-val-desc').value.trim();
+
+                if (!tVal || !dVal) {
+                    showToast('Lütfen tüm alanları doldurun!', false);
+                    return;
+                }
+
+                db.why_choose.cards[cIdx].title = tVal;
+                db.why_choose.cards[cIdx].desc = dVal;
+                saveDB(db);
+                showToast(`Neden biz kartı #${cIdx + 1} güncellendi.`);
+            });
+        });
+    };
+
+    // 9. Load & Save REVIEWS (TESTIMONIALS)
+    const renderReviews = () => {
+        const container = document.getElementById('adminReviewsItems');
+        container.innerHTML = ''; // reset
+
+        if (db.testimonials.length === 0) {
+            container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px;">Henüz aktif müşteri yorumu bulunmuyor.</div>';
+            return;
+        }
+
+        db.testimonials.forEach(rev => {
+            const card = document.createElement('div');
+            card.className = 'admin-item-card';
+            card.innerHTML = `
+                <div class="admin-item-info">
+                    <div class="admin-item-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>${rev.name}</span>
+                        <span style="color: var(--accent); font-size: 0.85rem;">${'★'.repeat(rev.stars)}</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 8px;">${rev.role}</div>
+                    <p class="admin-item-desc" style="font-style: italic;">"${rev.text}"</p>
+                    <div class="admin-review-meta">
+                        <span style="font-size: 0.75rem; color: var(--success); font-weight: 600;"><i class="fa-solid fa-circle-check"></i> Sitede Yayında</span>
+                        <button class="admin-item-btn btn-delete-rev" data-id="${rev.id}" style="position: static; width: auto; height: auto; padding: 6px 12px; font-size: 0.8rem; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-trash-can"></i> Sil
+                        </button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+
+            // Delete Review
+            card.querySelector('.btn-delete-rev').addEventListener('click', () => {
+                db.testimonials = db.testimonials.filter(t => t.id !== rev.id);
+                saveDB(db);
+                renderReviews();
+                showToast('Müşteri yorumu silindi.');
+            });
+        });
+    };
+
+    const initReviewsForm = () => {
+        document.getElementById('addReviewForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const nameVal = document.getElementById('inp-revName').value.trim();
+            const roleVal = document.getElementById('inp-revRole').value.trim();
+            const starVal = parseInt(document.getElementById('inp-revStars').value);
+            const textVal = document.getElementById('inp-revText').value.trim();
+
+            if (!nameVal || !roleVal || !textVal) {
+                showToast('Lütfen tüm zorunlu alanları doldurun!', false);
+                return;
+            }
+
+            const newRev = {
+                id: Date.now(),
+                name: nameVal,
+                role: roleVal,
+                stars: starVal,
+                text: textVal
+            };
+
+            db.testimonials.unshift(newRev); // add to the top
+            saveDB(db);
+
+            // Reset form
+            document.getElementById('addReviewForm').reset();
+
+            renderReviews();
+            showToast('Müşteri yorumu başarıyla eklendi ve yayına alındı!');
+        });
+
+        renderReviews();
+    };
+
+    // 10. Load & Save CONTACT INFO
+    const initContact = () => {
+        document.getElementById('inp-contAddress').value = db.contact.address;
+        document.getElementById('inp-contPhone').value = db.contact.phone;
+        document.getElementById('inp-contEmail').value = db.contact.email;
+        document.getElementById('inp-contMap').value = db.contact.map_embed;
+
+        document.getElementById('contactFormAdmin').addEventListener('submit', (e) => {
+            e.preventDefault();
+            db.contact.address = document.getElementById('inp-contAddress').value.trim();
+            db.contact.phone = document.getElementById('inp-contPhone').value.trim();
+            db.contact.email = document.getElementById('inp-contEmail').value.trim();
+            db.contact.map_embed = document.getElementById('inp-contMap').value.trim();
+
+            saveDB(db);
+            showToast('İletişim bilgileri başarıyla güncellendi.');
+        });
+    };
+
+    // Initialize all components
+    initHero();
+    initAbout();
+    initServices();
+    initGalleryForm();
+    initProcess();
+    initWhy();
+    initReviewsForm();
+    initContact();
+});

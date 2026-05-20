@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yönetim Paneli | Amasra Orman Ürünleri</title>
+    
+    <!-- Core CSS Style -->
+    <link rel="stylesheet" href="style.css?v=2">
+    
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="admin-body">
+
+    <!-- Admin Session Authenticated Dashboard Wrapper -->
+    <div id="adminDashboard" style="display: none;">
+        <header class="admin-nav">
+            <!-- Mobile Hamburger Menu Button -->
+            <button id="adminMobileToggle" class="admin-mobile-toggle" aria-label="Menüyü Aç">
+                <i class="fa-solid fa-bars"></i>
+            </button>
+
+            <div class="admin-nav-title">
+                <i class="fa-solid fa-user-gear" style="color: var(--accent); font-size: 1.5rem;"></i>
+                <div>
+                    AMASRA ORMAN
+                    <span>YÖNETİM PANELİ</span>
+                </div>
+            </div>
+            <div class="admin-nav-actions">
+                <a href="index.html" target="_blank" class="btn btn-secondary" style="padding: 8px 16px; font-size: 0.88rem; box-shadow: none; border-color: rgba(255,255,255,0.2); color: var(--text-light);">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Siteyi Önizle
+                </a>
+                <button id="adminLogoutBtn" class="btn btn-primary" style="padding: 8px 16px; font-size: 0.88rem; box-shadow: none; background-color: var(--accent); color: var(--primary-deep); font-weight: 700;">
+                    <i class="fa-solid fa-right-from-bracket"></i> Güvenli Çıkış
+                </button>
+            </div>
+        </header>
+
+        <!-- Dashboard Container -->
+    <div class="admin-container">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <button class="admin-menu-btn active" data-target="sec-hero">
+                <i class="fa-solid fa-house"></i> Ana Sayfa (Hero)
+            </button>
+            <button class="admin-menu-btn" data-target="sec-about">
+                <i class="fa-solid fa-circle-info"></i> Hakkımızda
+            </button>
+            <button class="admin-menu-btn" data-target="sec-services">
+                <i class="fa-solid fa-hand-holding-hand"></i> Hizmetlerimiz
+            </button>
+            <button class="admin-menu-btn" data-target="sec-gallery">
+                <i class="fa-solid fa-images"></i> Galeri Yönetimi
+            </button>
+            <button class="admin-menu-btn" data-target="sec-process">
+                <i class="fa-solid fa-list-check"></i> İşleyiş Süreci
+            </button>
+            <button class="admin-menu-btn" data-target="sec-why">
+                <i class="fa-solid fa-circle-question"></i> Neden Biz?
+            </button>
+            <button class="admin-menu-btn" data-target="sec-testimonials">
+                <i class="fa-solid fa-comments"></i> Yorum Yönetimi
+            </button>
+            <button class="admin-menu-btn" data-target="sec-contact">
+                <i class="fa-solid fa-envelope"></i> İletişim Bilgileri
+            </button>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="admin-main">
+
+            <!-- Section 1: Hero (Ana Sayfa) -->
+            <section class="admin-section active" id="sec-hero">
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-house"></i> Ana Sayfa (Hero Banner) Ayarları</h2>
+                    <form id="heroForm">
+                        <div class="admin-grid-2">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-heroBadge">Rozet Başlığı</label>
+                                <input type="text" id="inp-heroBadge" class="admin-form-input" required>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-heroSecondary">İkincil Buton Yazısı</label>
+                                <input type="text" id="inp-heroSecondary" class="admin-form-input" required>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-heroTitle">Ana Başlık (HTML Kullanabilirsiniz)</label>
+                            <input type="text" id="inp-heroTitle" class="admin-form-input" required>
+                        </div>
+                        
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-heroDesc">Açıklama Metni</label>
+                            <textarea id="inp-heroDesc" class="admin-form-input" required></textarea>
+                        </div>
+
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-heroWhatsApp">WhatsApp Teklif Mesajı (Müşteri Butona Tıkladığında Gidecek Mesaj)</label>
+                            <input type="text" id="inp-heroWhatsApp" class="admin-form-input" required>
+                        </div>
+
+                        <div class="admin-grid-2" style="align-items: center;">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">Arka Plan Resmi (Local Dosya Yükle)</label>
+                                <input type="file" id="inp-heroBgFile" class="admin-form-input" accept="image/*">
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">Mevcut Arka Plan Görseli</label>
+                                <div class="admin-img-preview">
+                                    <img id="prev-heroBg" src="" alt="Hero Background">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Değişiklikleri Kaydet</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Section 2: About (Hakkımızda) -->
+            <section class="admin-section" id="sec-about">
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-circle-info"></i> Hakkımızda Sayfa Ayarları</h2>
+                    <form id="aboutForm">
+                        <div class="admin-grid-2">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-aboutSubtitle">Üst Küçük Başlık</label>
+                                <input type="text" id="inp-aboutSubtitle" class="admin-form-input" required>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-aboutTitle">Ana Başlık</label>
+                                <input type="text" id="inp-aboutTitle" class="admin-form-input" required>
+                            </div>
+                        </div>
+
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-aboutDesc1">Paragraf 1</label>
+                            <textarea id="inp-aboutDesc1" class="admin-form-input" required></textarea>
+                        </div>
+
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-aboutDesc2">Paragraf 2</label>
+                            <textarea id="inp-aboutDesc2" class="admin-form-input" required></textarea>
+                        </div>
+
+                        <div class="admin-grid-2">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-aboutYears">Deneyim Yılı (Örn: 15+)</label>
+                                <input type="text" id="inp-aboutYears" class="admin-form-input" required>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-aboutExpText">Deneyim Alt Metni</label>
+                                <input type="text" id="inp-aboutExpText" class="admin-form-input" required>
+                            </div>
+                        </div>
+
+                        <div class="admin-grid-2" style="align-items: center;">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">Hakkımızda Görseli (Değiştir)</label>
+                                <input type="file" id="inp-aboutImageFile" class="admin-form-input" accept="image/*">
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label">Mevcut Görsel</label>
+                                <div class="admin-img-preview">
+                                    <img id="prev-aboutImg" src="" alt="About Image">
+                                </div>
+                            </div>
+                        </div>
+
+                        <h3 style="margin: 30px 0 15px 0; color: var(--primary-deep); font-size: 1.15rem; border-top: 1px solid rgba(13,44,29,0.08); padding-top: 20px;">Hakkımızda Alt Kutuları</h3>
+                        <div class="admin-grid-2">
+                            <div class="admin-card" style="background-color: var(--bg-light); margin-bottom: 0; padding: 20px;">
+                                <h4 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--primary);">Özellik 1</h4>
+                                <div class="admin-form-group">
+                                    <input type="text" id="inp-aboutFeat1Title" class="admin-form-input" placeholder="Başlık" required>
+                                </div>
+                                <div class="admin-form-group" style="margin-bottom: 0;">
+                                    <input type="text" id="inp-aboutFeat1Desc" class="admin-form-input" placeholder="Açıklama" required>
+                                </div>
+                            </div>
+
+                            <div class="admin-card" style="background-color: var(--bg-light); margin-bottom: 0; padding: 20px;">
+                                <h4 style="margin-bottom: 12px; font-size: 0.95rem; color: var(--primary);">Özellik 2</h4>
+                                <div class="admin-form-group">
+                                    <input type="text" id="inp-aboutFeat2Title" class="admin-form-input" placeholder="Başlık" required>
+                                </div>
+                                <div class="admin-form-group" style="margin-bottom: 0;">
+                                    <input type="text" id="inp-aboutFeat2Desc" class="admin-form-input" placeholder="Açıklama" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="margin-top: 30px;"><i class="fa-solid fa-save"></i> Değişiklikleri Kaydet</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Section 3: Services (Hizmetlerimiz) -->
+            <section class="admin-section" id="sec-services">
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-hand-holding-hand"></i> Hizmetlerimiz Sayfası Yönetimi</h2>
+                    <div id="servicesFormContainer">
+                        <!-- Dynamic generated editing fields for the 3 services -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: Gallery (Galeri Yönetimi) -->
+            <section class="admin-section" id="sec-gallery">
+                <!-- Add New Image Card -->
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-circle-plus"></i> Galeriye Yeni Resim Ekle (Localden)</h2>
+                    <form id="addGalleryForm">
+                        <div class="admin-grid-2" style="align-items: center;">
+                            <div>
+                                <div class="admin-form-group">
+                                    <label class="admin-form-label" for="inp-galTitle">Fotoğraf Başlığı / Açıklaması</label>
+                                    <input type="text" id="inp-galTitle" class="admin-form-input" placeholder="Örn: Tomruk Yükleme İşlemi" required>
+                                </div>
+                                <div class="admin-form-group">
+                                    <label class="admin-form-label" for="inp-galFile">Resim Seç (Local Bilgisayarınızdan Görsel Yükleyin)</label>
+                                    <input type="file" id="inp-galFile" class="admin-form-input" accept="image/*" required>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="admin-form-group">
+                                    <label class="admin-form-label">Yüklenecek Resim Önizlemesi</label>
+                                    <div class="admin-img-preview" style="height: 140px;">
+                                        <img id="prev-galImg" src="" alt="Gallery Image Preview" style="display: none;">
+                                        <span id="prev-galText" style="color: var(--text-muted); font-size: 0.9rem;">Resim seçilmedi</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Resim Ekle ve Kaydet</button>
+                    </form>
+                </div>
+
+                <!-- Existing Images Card -->
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-images"></i> Galerideki Aktif Görseller</h2>
+                    <div class="admin-items-grid" id="adminGalleryItems">
+                        <!-- Dynamic list of gallery items loaded from localStorage with delete buttons -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 5: Process (İşleyiş) -->
+            <section class="admin-section" id="sec-process">
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-list-check"></i> İşleyiş Süreci Adımları</h2>
+                    <form id="processHeaderForm" style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(13,44,29,0.08);">
+                        <div class="admin-grid-2">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-procSubtitle">Üst Başlık</label>
+                                <input type="text" id="inp-procSubtitle" class="admin-form-input" required>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-procTitle">Ana Başlık</label>
+                                <input type="text" id="inp-procTitle" class="admin-form-input" required>
+                            </div>
+                        </div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-procDesc">Genel Açıklama</label>
+                            <input type="text" id="inp-procDesc" class="admin-form-input" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="padding: 10px 20px; font-size: 0.9rem;"><i class="fa-solid fa-save"></i> Başlıkları Güncelle</button>
+                    </form>
+
+                    <div id="processStepsContainer">
+                        <!-- Dynamic steps content will render here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 6: Why Choose Us (Neden Biz?) -->
+            <section class="admin-section" id="sec-why">
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-circle-question"></i> Neden Biz? Sayfası Ayarları</h2>
+                    <form id="whyHeaderForm" style="margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid rgba(13,44,29,0.08);">
+                        <div class="admin-grid-2">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-whySubtitle">Üst Küçük Başlık</label>
+                                <input type="text" id="inp-whySubtitle" class="admin-form-input" required>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-whyTitle">Ana Başlık</label>
+                                <input type="text" id="inp-whyTitle" class="admin-form-input" required>
+                            </div>
+                        </div>
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-whyDesc">Açıklama Metni</label>
+                            <textarea id="inp-whyDesc" class="admin-form-input" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="padding: 10px 20px; font-size: 0.9rem;"><i class="fa-solid fa-save"></i> Başlıkları Güncelle</button>
+                    </form>
+
+                    <div id="whyCardsContainer">
+                        <!-- Dynamic value cards edit forms will render here -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 7: Testimonials (Müşteri Yorumları) -->
+            <section class="admin-section" id="sec-testimonials">
+                <!-- Add New Testimonial -->
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-comment-medical"></i> Yeni Müşteri Yorumu Ekle</h2>
+                    <form id="addReviewForm">
+                        <div class="admin-grid-2">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-revName">Müşteri Adı Soyadı</label>
+                                <input type="text" id="inp-revName" class="admin-form-input" placeholder="Örn: Mehmet Can" required>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-revRole">Mesleği / Bölgesi</label>
+                                <input type="text" id="inp-revRole" class="admin-form-input" placeholder="Örn: Arazi Sahibi - Bartın Merkez" required>
+                            </div>
+                        </div>
+                        
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-revStars">Değerlendirme Puanı (Yıldız)</label>
+                            <select id="inp-revStars" class="admin-form-input" style="background-color: var(--bg-white);" required>
+                                <option value="5">⭐⭐⭐⭐⭐ (5 Yıldız - Mükemmel)</option>
+                                <option value="4">⭐⭐⭐⭐ (4 Yıldız - Çok İyi)</option>
+                                <option value="3">⭐⭐⭐ (3 Yıldız - Orta)</option>
+                            </select>
+                        </div>
+
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-revText">Müşteri Yorumu Metni</label>
+                            <textarea id="inp-revText" class="admin-form-input" placeholder="Firmanızdan aldığı hizmet hakkındaki görüşleri..." required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Yorum Ekle ve Kaydet</button>
+                    </form>
+                </div>
+
+                <!-- Existing Testimonials List -->
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-comments"></i> Aktif Müşteri Yorumları</h2>
+                    <div class="admin-items-grid" id="adminReviewsItems">
+                        <!-- Dynamic list of testimonials with delete/approve buttons -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 8: Contact (İletişim) -->
+            <section class="admin-section" id="sec-contact">
+                <div class="admin-card">
+                    <h2 class="admin-card-title"><i class="fa-solid fa-envelope"></i> İletişim Bilgileri Ayarları</h2>
+                    <form id="contactFormAdmin">
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-contAddress">Merkez Adres</label>
+                            <input type="text" id="inp-contAddress" class="admin-form-input" required>
+                        </div>
+
+                        <div class="admin-grid-2">
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-contPhone">Telefon Numarası</label>
+                                <input type="text" id="inp-contPhone" class="admin-form-input" required>
+                            </div>
+                            <div class="admin-form-group">
+                                <label class="admin-form-label" for="inp-contEmail">E-Posta Adresi</label>
+                                <input type="email" id="inp-contEmail" class="admin-form-input" required>
+                            </div>
+                        </div>
+
+                        <div class="admin-form-group">
+                            <label class="admin-form-label" for="inp-contMap">Google Harita Gömme Linki (Embed iframe src URL)</label>
+                            <textarea id="inp-contMap" class="admin-form-input" required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> İletişim Bilgilerini Kaydet</button>
+                    </form>
+                </div>
+            </section>
+
+        </main>
+    </div>
+    </div> <!-- Close #adminDashboard -->
+
+    <!-- Admin Glassmorphism Login Overlay -->
+    <div id="adminLogin" class="admin-login-overlay" style="display: flex;">
+        <div class="admin-login-card">
+            <div class="admin-login-logo">
+                <i class="fa-solid fa-tree"></i>
+                <h2>AMASRA ORMAN <br><span>YÖNETİM PANELİ GİRİŞİ</span></h2>
+            </div>
+            
+            <form id="adminLoginForm">
+                <div class="admin-form-group">
+                    <label class="admin-form-label" for="login-username">Kullanıcı Adı</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-user login-input-icon"></i>
+                        <input type="text" id="login-username" class="admin-form-input login-input" placeholder="Kullanıcı adınız" required autocomplete="username">
+                    </div>
+                </div>
+                
+                <div class="admin-form-group">
+                    <label class="admin-form-label" for="login-password">Giriş Şifresi</label>
+                    <div style="position: relative;">
+                        <i class="fa-solid fa-lock login-input-icon"></i>
+                        <input type="password" id="login-password" class="admin-form-input login-input" placeholder="••••••••" required autocomplete="current-password">
+                    </div>
+                </div>
+                
+                <div id="loginErrorMsg" class="login-error-msg">
+                    <i class="fa-solid fa-circle-exclamation"></i> Hatalı kullanıcı adı veya şifre!
+                </div>
+                
+                <button type="submit" class="btn btn-primary login-btn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sisteme Giriş Yap
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Elegant Notification Toast -->
+    <div class="admin-toast" id="adminToast">
+        <i class="fa-solid fa-circle-check" style="color: var(--accent); font-size: 1.3rem;"></i>
+        <span id="adminToastMsg">Değişiklikler başarıyla kaydedildi!</span>
+    </div>
+
+    <!-- Scripts -->
+    <script src="db.js"></script>
+    <script src="admin.js?v=2"></script>
+</body>
+</html>
