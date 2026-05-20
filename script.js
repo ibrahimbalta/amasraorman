@@ -396,4 +396,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial page load rendering
     renderPage();
+
+    // Background cloud database sync (SWR pattern)
+    if (typeof fetchVercelKV === 'function') {
+        fetchVercelKV().then(cloudData => {
+            if (cloudData) {
+                // Mutate the local db reference and trigger instant re-render
+                Object.assign(db, cloudData);
+                renderPage();
+            }
+        }).catch(err => console.log('KV sync omitted or running locally:', err));
+    }
 });

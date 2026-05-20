@@ -637,4 +637,17 @@ document.addEventListener('DOMContentLoaded', () => {
     initWhy();
     initReviewsForm();
     initContact();
+
+    // Background cloud database sync (SWR pattern for Admin Panel)
+    if (typeof fetchVercelKV === 'function') {
+        fetchVercelKV().then(cloudData => {
+            if (cloudData) {
+                const localStr = localStorage.getItem('amasra_orman_db');
+                const cloudStr = JSON.stringify(cloudData);
+                if (localStr !== cloudStr) {
+                    window.location.reload();
+                }
+            }
+        }).catch(err => console.log('KV sync omitted or running locally:', err));
+    }
 });

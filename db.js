@@ -179,4 +179,48 @@ function getDB() {
 
 function saveDB(data) {
     localStorage.setItem(DB_KEY, JSON.stringify(data));
+    
+    // Automatically trigger background Vercel KV sync if on admin page and not in clean state
+    if (window.location.pathname.includes('admin') && typeof saveVercelKV === 'function') {
+        saveVercelKV(data, '7467').catch(err => console.log('KV sync omitted or running locally:', err));
+    }
+}
+
+// Background Vercel KV Sync Helpers (SWR Pattern)
+async function fetchVercelKV() {
+    try {
+        const res = await fetch('/api/get-data');
+        if (!res.ok) return null;
+        const result = await res.json();
+        if (result.success && result.data) {
+            localStorage.setItem(DB_KEY, JSON.stringify(result.data));
+            return result.data;
+        }
+    } catch (e) {
+        console.warn('Vercel KV sync offline or running locally:', e);
+    }
+    return null;
+}
+
+async function saveVercelKV(data, password) {
+    try {
+        const res = await fetch('/api/save-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-admin-password': password
+            },
+            body: JSON.stringify({ data: data })
+        });
+        const result = await res.json();
+        if (result.success) {
+            console.log('Data successfully saved to Vercel KV bulut veritabanı!');
+            return true;
+        } else {
+            console.error('Vercel KV save error:', result.error);
+        }
+    } catch (e) {
+        console.error('Vercel KV save failed:', e);
+    }
+    return false;
 }

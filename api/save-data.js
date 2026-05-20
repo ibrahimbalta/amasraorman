@@ -1,0 +1,77 @@
+export default async function handler(req, res) {
+  // CORS Headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, x-admin-password'
+  );
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ success: false, error: 'Method Not Allowed' });
+  }
+
+  try {
+    const kvUrl = process.env.KV_REST_API_URL;
+    const kvToken = process.env.KV_REST_API_TOKEN;
+
+    if (!kvUrl || !kvToken) {
+      return res.status(500).json({
+        success: false,
+        error: 'Vercel KV is not connected yet.'
+      });
+    }
+
+    // Basic admin authentication matching 7467 credentials
+    const adminPassword = req.headers['x-admin-password'] || req.body?.password;
+    if (adminPassword !== '7467') {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized access. Invalid password.'
+      });
+    }
+
+    const payload = req.body.data;
+    if (!payload) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing payload data.'
+      });
+    }
+
+    // Save to Vercel KV under key 'amasra_site_data'
+    const response = await fetch(`${kvUrl}/set/amasra_site_data`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${kvToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(JSON.stringify(payload))
+    });
+
+    const result = await response.json();
+
+    if (result.error) {
+      return res.status(500).json({
+        success: false,
+        error: result.error
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Data successfully synchronized with Vercel KV bulut veritabani!'
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
