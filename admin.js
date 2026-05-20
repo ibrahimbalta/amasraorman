@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (usernameVal === 'kmelemez' && passwordVal === '7467') {
                 sessionStorage.setItem('admin_logged_in', 'true');
+                sessionStorage.setItem('admin_password', passwordVal);
                 loginError.style.display = 'none';
                 checkAuth();
                 showToast('Yönetim paneline başarıyla giriş yapıldı.');
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
             sessionStorage.removeItem('admin_logged_in');
+            sessionStorage.removeItem('admin_password');
             window.location.reload();
         });
     }

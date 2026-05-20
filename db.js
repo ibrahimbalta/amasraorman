@@ -228,7 +228,7 @@ function getDB() {
     try {
         const localData = localStorage.getItem(DB_KEY);
         if (!localData) {
-            saveDB(DEFAULT_DB);
+            localStorage.setItem(DB_KEY, JSON.stringify(DEFAULT_DB));
             return DEFAULT_DB;
         }
         let parsed = JSON.parse(localData);
@@ -381,9 +381,11 @@ function saveDB(data) {
         return Promise.reject(new Error('localStorage_quota'));
     }
     
-    // Automatically trigger background Vercel KV sync if helper is available
-    if (typeof saveVercelKV === 'function') {
-        return saveVercelKV(data, '7467').then(success => {
+    // Automatically trigger background Vercel KV sync ONLY if admin is logged in
+    const isAdmin = sessionStorage.getItem('admin_logged_in') === 'true';
+    if (isAdmin && typeof saveVercelKV === 'function') {
+        const adminPassword = sessionStorage.getItem('admin_password') || '7467';
+        return saveVercelKV(data, adminPassword).then(success => {
             window.isSaving = false; // Reset flag
             if (!success) {
                 if (typeof window.showToast === 'function') {
