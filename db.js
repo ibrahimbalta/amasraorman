@@ -255,9 +255,11 @@ function getDB() {
 }
 
 function saveDB(data) {
+    window.isSaving = true; // Set saving flag to block background sync overwriting
     try {
         localStorage.setItem(DB_KEY, JSON.stringify(data));
     } catch (e) {
+        window.isSaving = false;
         console.error('localStorage kayıt hatası (QuotaExceeded?):', e);
         if (typeof window.showToast === 'function') {
             window.showToast('HATA: Tarayıcı hafızası dolu! Görsel çok büyük olabilir.', false);
@@ -268,6 +270,7 @@ function saveDB(data) {
     // Automatically trigger background Vercel KV sync if helper is available
     if (typeof saveVercelKV === 'function') {
         return saveVercelKV(data, '7467').then(success => {
+            window.isSaving = false; // Reset flag
             if (!success) {
                 if (typeof window.showToast === 'function') {
                     window.showToast('HATA: Bulut veritabanına kaydedilemedi! Değişiklikler kalıcı olmayabilir.', false);
@@ -276,6 +279,7 @@ function saveDB(data) {
             }
             return true;
         }).catch(err => {
+            window.isSaving = false; // Reset flag
             console.error('KV sync hatası:', err);
             if (typeof window.showToast === 'function') {
                 window.showToast('HATA: Bulut senkronizasyon hatası oluştu!', false);
@@ -283,11 +287,17 @@ function saveDB(data) {
             return Promise.reject(err);
         });
     }
+    window.isSaving = false;
     return Promise.resolve(true);
 }
 
 // Background Vercel KV Sync Helpers (SWR Pattern)
 async function fetchVercelKV() {
+    // Postpone if actively saving
+    if (window.isSaving) {
+        console.log('Sync postponed: active save operation in progress.');
+        return null;
+    }
     try {
         const res = await fetch('/api/get-data');
         if (!res.ok) return null;
@@ -303,6 +313,12 @@ async function fetchVercelKV() {
                 }
             }
             
+            // Postpone if saving started during the network request
+            if (window.isSaving) {
+                console.log('Sync aborted: active save started during fetch.');
+                return null;
+            }
+
             // Self-healing merge on cloud data as well to prevent local crashes
             healSchemaDeep(cloudData, DEFAULT_DB);
             

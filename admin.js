@@ -931,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Background cloud database sync (SWR pattern for Admin Panel)
     if (typeof fetchVercelKV === 'function') {
         fetchVercelKV().then(cloudData => {
-            if (cloudData) {
+            if (cloudData && !window.isSaving) {
                 const localStr = JSON.stringify(db);
                 const cloudStr = JSON.stringify(cloudData);
                 if (localStr !== cloudStr) {
