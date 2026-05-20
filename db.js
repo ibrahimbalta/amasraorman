@@ -164,6 +164,18 @@ const DEFAULT_DB = {
             stars: 5,
             text: 'Kemal Bey ve ekibine çok teşekkür ederiz. Arazimizdeki ağaçların tespiti, Orman İşletme\'den izinlerin çıkarılması ve sonrasındaki sevk sürecini mükemmel yönettiler. Kendileriyle gönül rahatlığıyla çalışabilirsiniz.'
         }
+    ],
+    messages: [
+        {
+            id: 1,
+            name: 'Mehmet Demir',
+            phone: '0532 123 45 67',
+            email: 'mehmet@gmail.com',
+            location: 'Bartın / Kozcağız',
+            message: 'Arazimde yaklaşık 45 adet yetişkin meşe ağacı bulunmaktadır. Kesim ve satın alma işlemleri için ücretsiz keşif ve fiyat teklifi rica ediyorum.',
+            date: '2026-05-19 14:32',
+            status: 'new'
+        }
     ]
 };
 
@@ -180,8 +192,8 @@ function getDB() {
 function saveDB(data) {
     localStorage.setItem(DB_KEY, JSON.stringify(data));
     
-    // Automatically trigger background Vercel KV sync if on admin page and not in clean state
-    if (window.location.pathname.includes('admin') && typeof saveVercelKV === 'function') {
+    // Automatically trigger background Vercel KV sync if helper is available
+    if (typeof saveVercelKV === 'function') {
         saveVercelKV(data, '7467').catch(err => console.log('KV sync omitted or running locally:', err));
     }
 }

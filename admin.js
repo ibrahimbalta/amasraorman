@@ -628,7 +628,138 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // --- 11. Gelen Keşif Talepleri (Inbox) Management ---
+    const unreadBadge = document.getElementById('unreadCountBadge');
+    const messagesContainer = document.getElementById('messagesListContainer');
+    const clearAllBtn = document.getElementById('btn-clearAllMessages');
+
+    const updateUnreadBadge = () => {
+        if (!db.messages) db.messages = [];
+        const count = db.messages.filter(m => m.status === 'new').length;
+        if (unreadBadge) {
+            if (count > 0) {
+                unreadBadge.textContent = count;
+                unreadBadge.style.display = 'inline-block';
+            } else {
+                unreadBadge.style.display = 'none';
+            }
+        }
+    };
+
+    const renderMessages = () => {
+        if (!messagesContainer) return;
+        messagesContainer.innerHTML = '';
+        
+        if (!db.messages || db.messages.length === 0) {
+            messagesContainer.innerHTML = `
+                <div class="no-messages-placeholder">
+                    <i class="fa-solid fa-inbox"></i>
+                    <h3>Henüz Gelen Keşif Talebi Yok</h3>
+                    <p>Müşterileriniz ana sayfadaki keşif formunu doldurduğunda talepleri burada listelenecektir.</p>
+                </div>
+            `;
+            updateUnreadBadge();
+            return;
+        }
+
+        // Sort reverse chronological (newest first)
+        const sortedMsgs = [...db.messages].sort((a, b) => b.id - a.id);
+
+        sortedMsgs.forEach(msg => {
+            const card = document.createElement('div');
+            card.className = `message-card-item ${msg.status === 'new' ? 'new-message' : ''}`;
+            
+            const isNew = msg.status === 'new';
+            const statusLabel = isNew ? 
+                '<span style="background-color: #ef4444; color: white; padding: 4px 8px; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700;"><i class="fa-solid fa-bell"></i> Yeni Talep</span>' : 
+                '<span style="background-color: #10b981; color: white; padding: 4px 8px; border-radius: var(--radius-sm); font-size: 0.75rem; font-weight: 700;"><i class="fa-solid fa-circle-check"></i> İletişim Kuruldu</span>';
+
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <h3 style="font-size: 1.15rem; margin-bottom: 0; color: var(--primary-deep); font-weight: 700;">${msg.name}</h3>
+                        ${statusLabel}
+                    </div>
+                    <span style="font-size: 0.82rem; color: var(--text-muted); font-weight: 500;"><i class="fa-solid fa-clock"></i> ${msg.date}</span>
+                </div>
+
+                <div class="message-meta-grid">
+                    <div class="message-meta-item">
+                        <i class="fa-solid fa-phone"></i>
+                        <a href="tel:${msg.phone.replace(/\s+/g, '')}" style="color: var(--primary); font-weight: 600;">${msg.phone}</a>
+                    </div>
+                    ${msg.email ? `
+                    <div class="message-meta-item">
+                        <i class="fa-solid fa-envelope"></i>
+                        <a href="mailto:${msg.email}" style="color: var(--text-dark);">${msg.email}</a>
+                    </div>` : ''}
+                    ${msg.location ? `
+                    <div class="message-meta-item">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                        <span>${msg.location}</span>
+                    </div>` : ''}
+                </div>
+
+                <div class="message-text-content">${msg.message}</div>
+
+                <div class="message-card-actions">
+                    ${isNew ? `
+                    <button class="btn-message-action contacted btn-mark-contacted" data-id="${msg.id}">
+                        <i class="fa-solid fa-phone-slash"></i> Arandı Olarak İşaretle
+                    </button>` : `
+                    <button class="btn-message-action contacted btn-mark-contacted" data-id="${msg.id}" style="background-color: transparent; border-color: rgba(0,0,0,0.1); color: var(--text-muted);">
+                        <i class="fa-solid fa-phone"></i> Geri Al (Yeni Yap)
+                    </button>
+                    `}
+                    <button class="btn-message-action delete btn-delete-msg" data-id="${msg.id}">
+                        <i class="fa-solid fa-trash-can"></i> Sil
+                    </button>
+                </div>
+            `;
+
+            // Action: Mark as contacted / Toggle
+            card.querySelector('.btn-mark-contacted').addEventListener('click', () => {
+                const targetMsg = db.messages.find(m => m.id === msg.id);
+                if (targetMsg) {
+                    targetMsg.status = targetMsg.status === 'new' ? 'contacted' : 'new';
+                    saveDB(db);
+                    renderMessages();
+                    showToast(targetMsg.status === 'contacted' ? 'Talep arandı olarak işaretlendi.' : 'Talep yeni olarak işaretlendi.');
+                }
+            });
+
+            // Action: Delete
+            card.querySelector('.btn-delete-msg').addEventListener('click', () => {
+                db.messages = db.messages.filter(m => m.id !== msg.id);
+                saveDB(db);
+                renderMessages();
+                showToast('Keşif talebi silindi.');
+            });
+
+            messagesContainer.appendChild(card);
+        });
+
+        updateUnreadBadge();
+    };
+
+    const initMessages = () => {
+        if (clearAllBtn) {
+            clearAllBtn.addEventListener('click', () => {
+                if (!db.messages || db.messages.length === 0) return;
+                if (confirm('Tüm keşif taleplerini silmek istediğinize emin misiniz? Bu işlem geri alınamaz!')) {
+                    db.messages = [];
+                    saveDB(db);
+                    renderMessages();
+                    showToast('Tüm gelen talepler temizlendi.');
+                }
+            });
+        }
+        
+        renderMessages();
+    };
+
     // Initialize all components
+    initMessages();
     initHero();
     initAbout();
     initServices();

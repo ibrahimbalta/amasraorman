@@ -323,6 +323,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const name = document.getElementById('formName').value.trim();
             const phone = document.getElementById('formPhone').value.trim();
+            const email = document.getElementById('formEmail') ? document.getElementById('formEmail').value.trim() : '';
+            const location = document.getElementById('formLocation') ? document.getElementById('formLocation').value.trim() : '';
             const message = document.getElementById('formMessage').value.trim();
 
             if (!name || !phone || !message) {
@@ -335,12 +337,29 @@ document.addEventListener('DOMContentLoaded', () => {
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
 
+            // Generate new message and store in DB
+            if (!db.messages) db.messages = [];
+            
+            const newMsg = {
+                id: db.messages.length > 0 ? Math.max(...db.messages.map(m => m.id)) + 1 : 1,
+                name: name,
+                phone: phone,
+                email: email,
+                location: location,
+                message: message,
+                date: new Date().toLocaleString('tr-TR', { timeZone: 'Europe/Istanbul' }).slice(0, 16),
+                status: 'new'
+            };
+
+            db.messages.push(newMsg);
+            saveDB(db);
+
             setTimeout(() => {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
                 contactForm.reset();
                 showStatus('Keşif talebiniz başarıyla iletildi. En kısa sürede dönüş sağlayacağız.', 'success');
-            }, 1500);
+            }, 1000);
         });
     }
 
